@@ -1,0 +1,46 @@
+{
+  "roads": {
+    "operational_cost_multiplier": 1.23,
+    "operational_cost_percentage": 23,
+    "description": "Additional 23% operational costs for road renovations on top of the direct replacement costs."
+  },
+  "sewerage": {
+    "gravity_renewal_cost_per_m": 975,
+    "operational_cost_multiplier": 1.35,
+    "operational_cost_percentage": 35,
+    "sewer_lifespan_soil_1": 30,
+    "sewer_lifespan_soil_2": 40,
+    "sewer_lifespan_soil_3": 60,
+    "description": "Renewal cost for gravity pipes is 975 EUR per meter. An additional 35% is added for operational costs. Sewer lifespans per soil type based on Micha's input (Zeer slap=30, Slap=40, Normaal=60)."
+  },
+  "optimization": {
+    "planning_horizon_years": 50,
+    "start_year": 2025,
+    "end_year": 2074,
+    "annual_sewer_capacity_m": 40000,
+    "discount_rate": 0.03,
+    "stranded_asset_coefficient_alpha": 1.0,
+    "overdue_penalty_coefficient_beta": 0.1,
+    "overdue_acceleration_factor_gamma": 1.05,
+    "description": "All optimization parameters are tunable. Discount rate set to 3% as requested. Penalty coefficients can be calibrated once the municipality provides risk data."
+  },
+  "network_stats": {
+    "total_ssus": 841,
+    "total_sewer_km": 2676.6,
+    "total_street_units": 12837,
+    "total_road_area_m2": 25233473.0,
+    "soil_counts": {
+      "2": 788,
+      "3": 51,
+      "1": 2
+    }
+  },
+  "data_quality": {
+    "ssu_missing_year_count": 356,
+    "ssu_missing_year_pct": 42.3,
+    "road_missing_surface_year_count": 1901,
+    "road_missing_surface_year_pct": 14.8,
+    "road_unlinked_count": 1110,
+    "road_unlinked_pct": 8.6
+  }
+}

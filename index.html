@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rotterdam Integrated Maintenance Optimization Dashboard</title>
+
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-timedimension/1.1.1/leaflet.timedimension.control.min.css">
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <!-- Custom Dashboard CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="dashboard-nav">
+    <div class="container is-fluid px-5 py-3">
+      <div class="is-flex is-justify-content-space-between is-align-items-center is-flex-wrap-wrap" style="gap: 1rem;">
+        <div class="is-flex is-align-items-center" style="gap: 0.75rem;">
+          <span class="brand-title is-size-5">Rotterdam Infrastructure Optimizer</span>
+          <span class="pilot-badge">Pilot Study · 2025–2074</span>
+        </div>
+
+        <nav class="nav-tabs-bar" aria-label="Dashboard Tabs">
+          <button class="tab-btn is-active" data-tab="home">🏠 Home</button>
+          <button class="tab-btn" data-tab="greedy">📊 Greedy Baseline</button>
+          <button class="tab-btn" data-tab="milp">⚙️ MILP Optimizer</button>
+          <button class="tab-btn" data-tab="comparison">⚖️ Comparison</button>
+          <button class="tab-btn" data-tab="takeaways">💡 Takeaways</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- =================================================================== -->
+  <!-- TAB 1: HOME                                                         -->
+  <!-- =================================================================== -->
+  <main id="tab-home" class="tab-panel is-active">
+    <!-- Hero -->
+    <section class="hero-banner">
+      <div class="hero-kicker">Gemeente Rotterdam · Integrated Asset Management Pilot</div>
+      <h1 class="hero-headline">Integrated Road &amp; Sewer Maintenance Optimization</h1>
+      <p class="hero-lead">
+        Synchronizing underground sewer and surface road maintenance under the <strong>Dig-Once</strong> principle to save
+        <span class="hero-highlight" id="hero-savings-highlight">€6.81 Billion</span> in lifecycle value over 50 years through mathematical optimization.
+      </p>
+    </section>
+
+    <!-- Key Stats Cards -->
+    <section class="mb-5">
+      <h2 class="section-heading">Rotterdam Infrastructure in Numbers</h2>
+      <div class="columns is-multiline">
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-sewer">
+            <div class="stat-icon">🔧</div>
+            <div class="stat-label">Gravity Sewer Network</div>
+            <div class="stat-value" id="stat-sewer-km">2,676.6 km</div>
+            <div class="stat-sub">100% expires within the 50-year horizon</div>
+          </div>
+        </div>
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-road">
+            <div class="stat-icon">🛣️</div>
+            <div class="stat-label">Road Surface Area</div>
+            <div class="stat-value" id="stat-road-m2">25.2 Million m²</div>
+            <div class="stat-sub">Carriageways, sidewalks &amp; road foundations</div>
+          </div>
+        </div>
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-teal">
+            <div class="stat-icon">📦</div>
+            <div class="stat-label">Sewer Subsystems (SSUs)</div>
+            <div class="stat-value" id="stat-ssu-count">841 units</div>
+            <div class="stat-sub">Gravity drainage basins across 3 soil types</div>
+          </div>
+        </div>
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-orange">
+            <div class="stat-icon">🗺️</div>
+            <div class="stat-label">Street Units</div>
+            <div class="stat-value" id="stat-street-count">12,837 units</div>
+            <div class="stat-sub">Intersection-to-intersection road segments</div>
+          </div>
+        </div>
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-green">
+            <div class="stat-icon">📅</div>
+            <div class="stat-label">Planning Horizon</div>
+            <div class="stat-value">2025 – 2074</div>
+            <div class="stat-sub">50-year lifecycle · 3.0% discount rate</div>
+          </div>
+        </div>
+        <div class="column is-4-desktop is-6-tablet">
+          <div class="stat-card accent-risk">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-label">Structural Capacity Deficit</div>
+            <div class="stat-value">676.6 km unfunded</div>
+            <div class="stat-sub">40 km/yr cap yields max 2,000 km in 50 yrs</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem Diagram & Methodology Pipeline -->
+    <div class="columns is-variable is-5 mb-5">
+      <div class="column is-5-desktop">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3 class="dash-card-title">The Asymmetric Dig-Once Problem</h3>
+          </div>
+          <div class="dig-once-box">
+            <div class="layer-card layer-surface">
+              <div class="is-flex is-justify-content-space-between is-align-items-center mb-1">
+                <strong style="color: #fff;">SURFACE: Road Network</strong>
+                <span class="code-pill">25.2M m² | 12,837 units</span>
+              </div>
+              <p class="is-size-7 has-text-grey-light">
+                Resurfacing asphalt or rebuilding foundations does <strong>NOT</strong> touch the sewer pipe beneath.
+              </p>
+            </div>
+
+            <div class="asymmetry-arrow">
+              <span style="font-size: 1.35rem;">⬇️</span>
+              <div>
+                <strong style="color: #fbd38d;">DIG-ONCE COUPLING RULE:</strong><br>
+                Excavating a sewer pipe <strong>DESTROYS</strong> the road above, forcing full road reconstruction (and a <em>Stranded Asset Penalty</em> if the pavement was still new).
+              </div>
+            </div>
+
+            <div class="layer-card layer-subsurface">
+              <div class="is-flex is-justify-content-space-between is-align-items-center mb-1">
+                <strong style="color: #fff;">SUBSURFACE: Gravity Sewers</strong>
+                <span class="code-pill">2,676.6 km | 841 SSUs</span>
+              </div>
+              <p class="is-size-7 has-text-grey-light">
+                Pipe lifespans depend on Dutch soil conditions: 30 yrs (Peat), 40 yrs (Soft Clay), or 60 yrs (Normal).
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="column is-7-desktop">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <h3 class="dash-card-title">End-to-End Methodology Pipeline</h3>
+          </div>
+          <p class="is-size-7 has-text-grey-light mb-3">
+            From fragmented GIS shapefiles and spreadsheets to citywide mathematical optimization across eight reproducible Python notebooks:
+          </p>
+          <div class="pipeline-grid">
+            <div class="pipeline-step">
+              <span class="step-num">Step 1 · Raw Data</span>
+              <h4>GIS &amp; Asset Tables</h4>
+              <p>196k road parts, SSU polygons, pipe dates &amp; soil maps.</p>
+            </div>
+            <div class="pipeline-step">
+              <span class="step-num">Step 2 · NB 01–05</span>
+              <h4>Clean &amp; Integrate</h4>
+              <p>Street units, road cost lookup &amp; spatial SSU linkage.</p>
+            </div>
+            <div class="pipeline-step">
+              <span class="step-num">Step 3 · NB 06</span>
+              <h4>Greedy Baseline</h4>
+              <p>Urgency-ranked heuristic with 5-year road lookahead.</p>
+            </div>
+            <div class="pipeline-step">
+              <span class="step-num">Step 4 · NB 07</span>
+              <h4>MILP Optimizer</h4>
+              <p>Global 50-year PuLP/CBC binary optimization.</p>
+            </div>
+            <div class="pipeline-step">
+              <span class="step-num">Step 5 · NB 08</span>
+              <h4>Benchmarking</h4>
+              <p>Apples-to-apples lifecycle NPV evaluation &amp; dashboard.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Master Parameter Table -->
+    <section>
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h3 class="dash-card-title">Master Tunable Parameter Matrix</h3>
+          <span class="code-pill">processed_data/financial_parameters.json</span>
+        </div>
+        <p class="is-size-7 has-text-grey-light mb-3">
+          All 11 financial, engineering, and risk parameters are externally configurable so municipal experts can recalibrate assumptions as empirical data improves.
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="dash-table" id="parameters-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Symbol</th>
+                <th class="is-num">Current Value</th>
+                <th>Definition &amp; Rationale</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- TAB 2: GREEDY BASELINE                                              -->
+  <!-- =================================================================== -->
+  <main id="tab-greedy" class="tab-panel">
+    <div class="dash-card mb-5">
+      <div class="dash-card-header">
+        <h2 class="dash-card-title is-size-4">📊 Greedy Baseline — Priority-Based Heuristic Results</h2>
+        <span class="tag is-warning-soft">Notebook 06 · Operational Rule-of-Thumb</span>
+      </div>
+      <p class="has-text-grey-light">
+        <strong>Algorithm:</strong> Each year, the model ranks all remaining Sewer Subsystems (SSUs) by urgency (years past due date) and greedily fills the <strong>40 km/year</strong> capacity from most urgent to least, permitting fractional splitting across years. Once an SSU finishes, linked roads are forced to renew (Dig-Once). Independently expiring roads wait only if their underlying sewer is due within <strong>5 years</strong>; otherwise, they pave immediately.
+      </p>
+    </div>
+
+    <!-- Physical Metrics Cards -->
+    <div class="columns is-multiline mb-5">
+      <div class="column is-3-desktop is-6-tablet">
+        <div class="stat-card accent-teal">
+          <div class="stat-label">Total Sewer Renovated</div>
+          <div class="stat-value" id="greedy-sewer-km">2,000.0 km</div>
+          <div class="stat-sub">100.0% of 50-year capacity</div>
+        </div>
+      </div>
+      <div class="column is-3-desktop is-6-tablet">
+        <div class="stat-card accent-sewer">
+          <div class="stat-label">Avg Annual Sewer</div>
+          <div class="stat-value" id="greedy-avg-sewer">40.0 km/yr</div>
+          <div class="stat-sub">Fractional pipe splitting allowed</div>
+        </div>
+      </div>
+      <div class="column is-3-desktop is-6-tablet">
+        <div class="stat-card accent-road">
+          <div class="stat-label">Linked Road Intervened</div>
+          <div class="stat-value" id="greedy-road-m2">25.49 M m²</div>
+          <div class="stat-sub">Plus unlinked street renewals</div>
+        </div>
+      </div>
+      <div class="column is-3-desktop is-6-tablet">
+        <div class="stat-card accent-orange">
+          <div class="stat-label">Avg Annual Linked Road</div>
+          <div class="stat-value" id="greedy-avg-road">510k m²/yr</div>
+          <div class="stat-sub">Erratic peaks from myopia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-Panel Charts -->
+    <div class="columns is-multiline mb-5">
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-greedy-cap" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-greedy-real" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-greedy-risk" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Diagnostic Callout -->
+    <div class="insight-callout is-warning mb-5">
+      <strong>Key Diagnostic (The Cost of Myopia):</strong> While the Greedy heuristic fills the 40 km annual sewer quota consistently, its 5-year lookahead cannot foresee sewer works 6–10 years away. As a result, it repaves roads independently only to excavate them shortly afterward—destroying <strong>€380.7M</strong> in remaining pavement value (<em>Stranded Assets</em>).
+    </div>
+
+    <!-- Interactive Folium-equivalent Leaflet Maps -->
+    <h3 class="section-heading">Spatial Intervention Schedule (2025–2074)</h3>
+    <div class="columns is-variable is-4">
+      <div class="column is-6-desktop">
+        <div class="map-wrapper">
+          <div class="map-header">
+            <strong>Map 1: Cumulative Renovations (Historical Track)</strong>
+            <div class="map-legend">
+              <span><span class="legend-swatch" style="background:#2196F3;"></span>Sewer SSU</span>
+              <span><span class="legend-swatch" style="background:#e67e22;"></span>Road Unit</span>
+            </div>
+          </div>
+          <div id="map-greedy-cum" class="map-canvas">
+            <div class="map-loading">Loading Rotterdam spatial layers...</div>
+          </div>
+          <div class="map-controls">
+            <button class="map-play-btn" id="play-greedy-cum">▶ Play</button>
+            <input type="range" class="map-slider" id="slider-greedy-cum" min="2025" max="2074" value="2030">
+            <span class="map-year-badge" id="year-greedy-cum">2030</span>
+            <span class="map-counts" id="counts-greedy-cum">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="column is-6-desktop">
+        <div class="map-wrapper">
+          <div class="map-header">
+            <strong>Map 2: Isolated Renovations (Selected Year Only)</strong>
+            <div class="map-legend">
+              <span><span class="legend-swatch" style="background:#2196F3;"></span>Sewer SSU</span>
+              <span><span class="legend-swatch" style="background:#e67e22;"></span>Road Unit</span>
+            </div>
+          </div>
+          <div id="map-greedy-iso" class="map-canvas">
+            <div class="map-loading">Loading Rotterdam spatial layers...</div>
+          </div>
+          <div class="map-controls">
+            <button class="map-play-btn" id="play-greedy-iso">▶ Play</button>
+            <input type="range" class="map-slider" id="slider-greedy-iso" min="2025" max="2074" value="2030">
+            <span class="map-year-badge" id="year-greedy-iso">2030</span>
+            <span class="map-counts" id="counts-greedy-iso">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- TAB 3: MILP OPTIMIZER                                               -->
+  <!-- =================================================================== -->
+  <main id="tab-milp" class="tab-panel">
+    <div class="dash-card mb-5">
+      <div class="dash-card-header">
+        <h2 class="dash-card-title is-size-4">⚙️ MILP Optimizer — Global Mathematical Optimization</h2>
+        <span class="tag is-success-soft">Notebook 07 · PuLP / CBC Exact Solver</span>
+      </div>
+      <p class="has-text-grey-light mb-4">
+        Instead of year-by-year heuristics, the MILP optimizer evaluates every Sewer Subsystem across all 50 candidate years plus a postponed state (<code>t = 9999</code>), embedding exact Dig-Once road simulations and Terminal Salvage Value credits inside a pre-calculated lifecycle cost matrix <i>C<sub>i,t</sub></i>.
+      </p>
+
+      <!-- KaTeX Mathematical Formulation -->
+      <div class="math-box">
+        <div class="columns is-variable is-4">
+          <div class="column is-6-desktop">
+            <div class="is-size-7 has-text-info has-text-weight-bold mb-1">DECISION VARIABLES &amp; OBJECTIVE</div>
+            <div class="math-row" id="math-var"></div>
+            <div class="math-row" id="math-obj"></div>
+          </div>
+          <div class="column is-6-desktop">
+            <div class="is-size-7 has-text-info has-text-weight-bold mb-1">ASSIGNMENT &amp; CAPACITY CONSTRAINTS</div>
+            <div class="math-row" id="math-c1"></div>
+            <div class="math-row" id="math-c2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Physical Metrics Cards -->
+    <div class="columns is-multiline mb-5">
+      <div class="column is-2-desktop is-4-tablet">
+        <div class="stat-card accent-teal">
+          <div class="stat-label">Sewer Renovated</div>
+          <div class="stat-value" id="milp-sewer-km">1,968.8 km</div>
+          <div class="stat-sub">Discrete binary SSUs</div>
+        </div>
+      </div>
+      <div class="column is-2-desktop is-4-tablet">
+        <div class="stat-card accent-green">
+          <div class="stat-label">Capacity Utilization</div>
+          <div class="stat-value" id="milp-cap-pct">98.4%</div>
+          <div class="stat-sub">No fractional splitting</div>
+        </div>
+      </div>
+      <div class="column is-3-desktop is-4-tablet">
+        <div class="stat-card accent-road">
+          <div class="stat-label">Linked Road Intervened</div>
+          <div class="stat-value" id="milp-road-m2">25.17 M m²</div>
+          <div class="stat-sub">Synchronized repaving</div>
+        </div>
+      </div>
+      <div class="column is-2-desktop is-6-tablet">
+        <div class="stat-card accent-green">
+          <div class="stat-label">Asphalt Saved</div>
+          <div class="stat-value" id="milp-saved-m2">312,165 m²</div>
+          <div class="stat-sub">Eliminated redundant work</div>
+        </div>
+      </div>
+      <div class="column is-3-desktop is-6-tablet">
+        <div class="stat-card accent-risk">
+          <div class="stat-label">Postponed (&gt;50 yrs)</div>
+          <div class="stat-value" id="milp-postponed-km">707.8 km</div>
+          <div class="stat-sub" id="milp-postponed-ssus">207 SSUs assigned to t=9999</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3-Panel Charts -->
+    <div class="columns is-multiline mb-5">
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-milp-cap" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-milp-real" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-12">
+        <div class="dash-card">
+          <div id="chart-milp-risk" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insight Callout -->
+    <div class="insight-callout is-success mb-5">
+      <strong>Key Insight:</strong> The MILP optimizer achieves near-perfect Dig-Once synchronization, virtually eliminating premature road destruction on scheduled works while maintaining <strong>98.4% capacity utilization</strong>. Green bars below zero represent real remaining asset heritage left to Rotterdam beyond 2074.
+    </div>
+
+    <!-- Interactive Maps -->
+    <h3 class="section-heading">MILP Optimal Spatial Schedule (2025–2074)</h3>
+    <div class="columns is-variable is-4">
+      <div class="column is-6-desktop">
+        <div class="map-wrapper">
+          <div class="map-header">
+            <strong>Map 1: MILP Cumulative Renovations</strong>
+            <div class="map-legend">
+              <span><span class="legend-swatch" style="background:#2196F3;"></span>Sewer SSU</span>
+              <span><span class="legend-swatch" style="background:#e67e22;"></span>Road Unit</span>
+            </div>
+          </div>
+          <div id="map-milp-cum" class="map-canvas">
+            <div class="map-loading">Loading Rotterdam spatial layers...</div>
+          </div>
+          <div class="map-controls">
+            <button class="map-play-btn" id="play-milp-cum">▶ Play</button>
+            <input type="range" class="map-slider" id="slider-milp-cum" min="2025" max="2074" value="2030">
+            <span class="map-year-badge" id="year-milp-cum">2030</span>
+            <span class="map-counts" id="counts-milp-cum">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="column is-6-desktop">
+        <div class="map-wrapper">
+          <div class="map-header">
+            <strong>Map 2: MILP Isolated Renovations (Selected Year Only)</strong>
+            <div class="map-legend">
+              <span><span class="legend-swatch" style="background:#2196F3;"></span>Sewer SSU</span>
+              <span><span class="legend-swatch" style="background:#e67e22;"></span>Road Unit</span>
+            </div>
+          </div>
+          <div id="map-milp-iso" class="map-canvas">
+            <div class="map-loading">Loading Rotterdam spatial layers...</div>
+          </div>
+          <div class="map-controls">
+            <button class="map-play-btn" id="play-milp-iso">▶ Play</button>
+            <input type="range" class="map-slider" id="slider-milp-iso" min="2025" max="2074" value="2030">
+            <span class="map-year-badge" id="year-milp-iso">2030</span>
+            <span class="map-counts" id="counts-milp-iso">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- TAB 4: COMPARISON                                                   -->
+  <!-- =================================================================== -->
+  <main id="tab-comparison" class="tab-panel">
+    <div class="insight-callout mb-5">
+      <strong>Standardized "Apples-to-Apples" Methodology (Notebook 08):</strong> Both the Greedy schedule and the MILP schedule are evaluated through the <em>exact same lifecycle cost function</em>—applying identical 3% discounting, exponential overdue penalties (&beta; = 0.10, &gamma; = 1.05), Dig-Once road simulation, and 2074 terminal salvage value credits for every SSU across Rotterdam.
+    </div>
+
+    <!-- Savings Breakdown Cards (5 cards in a row) -->
+    <h3 class="section-heading">Dimensional Savings Breakdown (MILP vs. Greedy)</h3>
+    <div class="columns is-multiline mb-5" id="savings-breakdown-cards"></div>
+
+    <!-- 3-Stage Value of Integration Progression Table -->
+    <div class="dash-card mb-5">
+      <div class="dash-card-header">
+        <h3 class="dash-card-title">Value of Integration Progression: Siloed vs. Heuristic vs. MILP</h3>
+        <span class="tag is-success-soft">Why Timing Matters More Than Total m²</span>
+      </div>
+      <p class="is-size-7 has-text-grey-light mb-3" style="line-height: 1.6;">
+        Note that the Greedy Baseline already implements a 5-year Dig-Once lookahead. When benchmarked against a truly <strong>uncoordinated Siloed</strong> municipality (0-year lookahead), the full value of Integrated Maintenance &amp; Optimization emerges: while ~25M m² must be paved over 50 years due to ~40-year road lifespans, optimizing <strong>when</strong> and <strong>where</strong> to dig cuts <strong>567 street closures</strong>, saves <strong>1.20M m²</strong> of pavement, avoids <strong>€97M (-23.1%)</strong> in stranded asphalt, and eliminates <strong>€12.33B (-39.8%)</strong> in road deterioration risk.
+      </p>
+      <div style="overflow-x: auto;">
+        <table class="dash-table" id="integration-progression-table">
+          <thead>
+            <tr>
+              <th>Planning Strategy</th>
+              <th class="is-num">Road Interventions</th>
+              <th class="is-num">Total Road Area (m²)</th>
+              <th class="is-num">Road CapEx (NPV)</th>
+              <th class="is-num">Stranded Asphalt</th>
+              <th class="is-num">Road Risk (NPV)</th>
+              <th class="is-num">Total Lifecycle NPV</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Master KPI Table -->
+    <div class="dash-card mb-5">
+      <div class="dash-card-header">
+        <h3 class="dash-card-title">Master KPI Comparison Table (50-Year Lifecycle NPV)</h3>
+        <span class="code-pill">Green = Savings · Red = Trade-off Increase</span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="dash-table" id="comparison-kpi-table">
+          <thead>
+            <tr>
+              <th>Cost Dimension / Metric</th>
+              <th class="is-num">Greedy Baseline</th>
+              <th class="is-num">MILP Optimal</th>
+              <th class="is-num">Absolute Difference</th>
+              <th class="is-num">Relative %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4 Comparative Charts -->
+    <div class="columns is-multiline mb-5">
+      <div class="column is-6-desktop">
+        <div class="dash-card">
+          <div id="chart-comp-m2" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-6-desktop">
+        <div class="dash-card">
+          <div id="chart-comp-stranded" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-6-desktop">
+        <div class="dash-card">
+          <div id="chart-comp-road-risk" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="column is-6-desktop">
+        <div class="dash-card">
+          <div id="chart-comp-cum" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Takeaway -->
+    <div class="insight-callout is-success">
+      <strong>Bottom Line:</strong> Mathematical optimization doesn't require higher capital budgets—it actually spends <strong>€13.6M less in real contractor cash</strong> while avoiding <strong>€57.2M in wasted asphalt</strong> and reducing total lifecycle costs by <strong>€6.81 Billion (-5.6%)</strong>.
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- TAB 5: TAKEAWAYS                                                    -->
+  <!-- =================================================================== -->
+  <main id="tab-takeaways" class="tab-panel">
+    <!-- Section A: Data Quality & Standardization -->
+    <section class="mb-5">
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h2 class="dash-card-title is-size-4">Section A · Data Quality &amp; Standardization Challenges</h2>
+          <span class="tag is-warning-soft">Phase 1 Engineering Lessons</span>
+        </div>
+        <div class="columns is-variable is-5 mb-3">
+          <div class="column is-5-desktop">
+            <h4 class="has-text-white has-text-weight-bold mb-2">What We Found in Raw Municipal Data</h4>
+            <ul class="has-text-grey-light is-size-7" style="line-height: 1.7; list-style: disc; padding-left: 1.2rem;">
+              <li><strong>Missing Pipe Ages:</strong> <span id="dq-ssu-pct">42.3%</span> of Sewer Subsystems lacked installation years; imputed using soil-type medians to prevent solver bias.</li>
+              <li><strong>GIS Topological Noise:</strong> Over 196,000 raw street polygons had overlaps, gaps, and fragmented attributes—standardized into 12,837 intersection-bounded <em>Street Units</em>.</li>
+              <li><strong>Scattered Spreadsheets:</strong> Pipe metadata, surface materials, and replacement unit rates lived in disconnected Excel tables without shared foreign keys.</li>
+              <li><strong>Uniform Sewer Unit Rate:</strong> Sewers currently use a single citywide flat rate (€975/m + 35% ops); pipe diameter, depth, and material differentiation were unavailable.</li>
+            </ul>
+          </div>
+          <div class="column is-7-desktop">
+            <h4 class="has-text-white has-text-weight-bold mb-2">Data Quality Scorecard</h4>
+            <div style="overflow-x: auto;">
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>Data Element</th>
+                    <th>Status</th>
+                    <th>Observed Issue</th>
+                    <th>Phase 2 Recommendation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Sewer Installation Years</td>
+                    <td><span class="tag is-warning-soft">⚠️ Partial</span></td>
+                    <td><span id="dq-ssu-score">42.3% (356/841) missing</span>, median-imputed</td>
+                    <td>Systematic georeferenced pipe registry</td>
+                  </tr>
+                  <tr>
+                    <td>Road Surface Dates</td>
+                    <td><span class="tag is-warning-soft">⚠️ Partial</span></td>
+                    <td><span id="dq-road-score">14.8% (1,901) missing</span> / clamped lifespans</td>
+                    <td>Condition-based PCI monitoring</td>
+                  </tr>
+                  <tr>
+                    <td>Pipe Material / Diameter</td>
+                    <td><span class="tag is-danger-soft">❌ Flat Rate</span></td>
+                    <td>Uniform €975/m applied citywide</td>
+                    <td>Differentiated cost matrix by diameter &amp; depth</td>
+                  </tr>
+                  <tr>
+                    <td>Soil Type Classification</td>
+                    <td><span class="tag is-success-soft">✅ Complete</span></td>
+                    <td>3 geotechnical zones mapped (30/40/60 yrs)</td>
+                    <td>Validate lifespans with local failure records</td>
+                  </tr>
+                  <tr>
+                    <td>Road Cost Lookup</td>
+                    <td><span class="tag is-success-soft">✅ Complete</span></td>
+                    <td>Surface type × area unit rates integrated</td>
+                    <td>Update contractor rates annually</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section B: Modeling & Validation Insights -->
+    <section class="mb-5">
+      <h2 class="section-heading">Section B · Critical Modeling &amp; Validation Insights</h2>
+      <div class="columns is-multiline">
+        <div class="column is-4-desktop">
+          <div class="dash-card" style="border-top: 3px solid var(--stranded-primary);">
+            <h3 class="dash-card-title mb-2">1. The β Calibration Discovery</h3>
+            <p class="is-size-7 has-text-grey-light mb-3" style="line-height: 1.6;">
+              With an initial overdue penalty of <strong>β = 2%</strong>/yr, the MILP mathematically proved that paying small fines for 50 years (51% PV) was cheaper than investing 100% CapEx—causing the solver to voluntarily abandon 2,628 km of pipes!
+            </p>
+            <p class="is-size-7 has-text-grey-light" style="line-height: 1.6;">
+              Raising <strong>β = 10%</strong> and adding exponential decay (<strong>γ = 1.05</strong>) restored realistic risk incentives above the 4.3% capital recovery threshold. <em>Takeaway:</em> Municipal risk calibration is the model's single highest-leverage parameter.
+            </p>
+          </div>
+        </div>
+
+        <div class="column is-4-desktop">
+          <div class="dash-card" style="border-top: 3px solid var(--savings-primary);">
+            <h3 class="dash-card-title mb-2">2. Eliminating End-of-Horizon Bias</h3>
+            <p class="is-size-7 has-text-grey-light mb-3" style="line-height: 1.6;">
+              An independent model audit revealed that without a <strong>Terminal Salvage Value</strong>, any finite 50-year optimizer stops building in the 2060s because paying a few years of penalties costs less than a brand-new 40-year asset.
+            </p>
+            <p class="is-size-7 has-text-grey-light" style="line-height: 1.6;">
+              Crediting discounted remaining life at 2074 ensures Rotterdam leaves durable infrastructure heritage rather than gaming the simulation cutoff.
+            </p>
+          </div>
+        </div>
+
+        <div class="column is-4-desktop">
+          <div class="dash-card" style="border-top: 3px solid var(--risk-primary);">
+            <h3 class="dash-card-title mb-2">3. The 40 km/yr Capacity Bottleneck</h3>
+            <p class="is-size-7 has-text-grey-light mb-3" style="line-height: 1.6;">
+              Because 100% of Rotterdam's <strong>2,676.6 km</strong> network expires before 2074, a 40 km/yr cap leaves an unavoidable <strong>676.6 km deficit</strong>:
+            </p>
+            <div class="bottleneck-bar-wrap">
+              <div class="bottleneck-funded" style="width: 74.7%;">2,000 km Funded (74.7%)</div>
+              <div class="bottleneck-deficit" style="width: 25.3%;">677 km</div>
+            </div>
+            <p class="is-size-7 has-text-grey-light">
+              Closing this backlog requires <strong>~54 km/yr</strong> capacity or a <strong>70-year horizon</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section C: Strategic Roadmap -->
+    <section class="mb-5">
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <h2 class="dash-card-title is-size-4">Section C · Strategic Roadmap (From Pilot to Production)</h2>
+        </div>
+        <div class="pipeline-grid">
+          <div class="pipeline-step">
+            <span class="step-num">Phase 2A · Data</span>
+            <h4>Inspection &amp; Cost Data</h4>
+            <p>Integrate CCTV sewer condition scores, diameter/depth cost curves, and live pavement PCI indices.</p>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">Phase 2B · Model</span>
+            <h4>Horizon &amp; Clustering</h4>
+            <p>Extend horizon to 70 years, run 45–55 km/yr capacity sensitivity, and add spatial neighborhood clustering.</p>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">Phase 3 · Multi-Utility</span>
+            <h4>Water &amp; District Heating</h4>
+            <p>Add drinking water (Evides) and district heating networks to share trenching costs across 3+ utilities.</p>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">Phase 4 · Operations</span>
+            <h4>Annual Re-Optimization</h4>
+            <p>Deploy rolling-horizon annual updates connected directly to municipal GIS &amp; procurement workflows.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final Call to Action -->
+    <section class="cta-banner">
+      <blockquote>
+        "This pilot demonstrates that even with imperfect data, mathematical optimization delivers billions in lifecycle savings. With targeted investment in asset data infrastructure, the model's precision and the municipality's confidence in its recommendations will only grow.
+        <br><br>
+        <strong style="color: #48bb78;">The question is not whether to optimize — it's how quickly Rotterdam can start.</strong>"
+      </blockquote>
+    </section>
+  </main>
+
+  <footer class="footer-bar">
+    Rotterdam Integrated Road &amp; Sewer Maintenance Optimization Pilot · Static Dashboard Ready for GitHub Pages · Built with Plotly, Leaflet &amp; KaTeX
+  </footer>
+
+  <!-- Libraries -->
+  <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-timedimension/1.1.1/leaflet.timedimension.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+  <!-- App Modules -->
+  <script src="js/charts.js"></script>
+  <script src="js/maps.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
