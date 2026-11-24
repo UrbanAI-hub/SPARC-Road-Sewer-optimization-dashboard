@@ -328,7 +328,7 @@
           <span class="tag is-cyan-soft">Strict Capacity Ceiling Guaranteed</span>
         </div>
         <p class="is-size-7 has-text-grey" style="line-height: 1.6;">
-          By solving a <strong>Generalized Assignment Model</strong> over the entire 50-year horizon, the optimizer evaluates all 42,891 potential assignment combinations ($841\text{ SSUs} \times 51\text{ choices}$). It globally synchronizes trenching to minimize total discounted expenditure, eliminates premature paving destruction, and enforces strict contractor capacity caps ($\le 40{,}000\text{ m/year}$) for every single calendar year.
+          By solving a <strong>Generalized Assignment Model</strong> over the entire 50-year horizon, the optimizer evaluates all 42,891 potential assignment combinations (841 SSUs &times; 51 choices). It globally synchronizes trenching to minimize total discounted expenditure, eliminates premature paving destruction, and enforces strict contractor capacity caps (&le; 40,000 m/year) for every single calendar year.
         </p>
       </div>
 
@@ -429,7 +429,7 @@
           <div class="map-wrapper">
             <div class="map-header">
               <strong style="font-size: 0.95rem;">Annual Isolated Works Map (MILP)</strong>
-              <span class="code-pill">Strictly $\le 40\text{ km/yr}$</span>
+              <span class="code-pill">Strictly &le; 40 km/yr</span>
             </div>
             <div id="map-milp-isolated" class="map-canvas"></div>
             <div class="map-controls">
@@ -480,8 +480,13 @@
           <span class="tag is-success-soft">Net Lifecycle Benefit: €6.81 Billion</span>
         </div>
         <p class="is-size-7 has-text-grey" style="line-height: 1.6;">
-          Both models are evaluated through an identical lifecycle accounting framework applying 3.0% discrete discounting, calibrated exponential deterioration risk ($\beta = 0.10, \gamma = 1.05$), straight-line capital destruction accounting, and terminal salvage credits across all 841 subsystems.
+          Both models are evaluated through an identical lifecycle accounting framework applying 3.0% discrete discounting, calibrated exponential deterioration risk (&beta; = 0.10, &gamma; = 1.05), straight-line capital destruction accounting, and terminal salvage credits across all 841 subsystems.
         </p>
+      </div>
+
+      <!-- Municipal Auditor Note -->
+      <div class="insight-callout mb-5">
+        <strong>Note for Municipal Budget Auditors:</strong> Real 50-year procurement CapEx totals <strong>€2.77 Billion</strong> (cash paid to civil contractors). The remaining ~€112B represents monetized societal liability from deferred maintenance and traffic disruption risks if aging subsurface assets exceed their operational lifespan.
       </div>
 
       <!-- Dimensional Savings Breakdown Cards -->
@@ -507,6 +512,9 @@
             </thead>
             <tbody></tbody>
           </table>
+        </div>
+        <div class="is-size-7 has-text-grey mt-3" style="border-top: 1px dashed var(--border-subtle); padding-top: 0.5rem;">
+          * <em>Salvage Value Credit</em> is a terminal accounting credit representing the remaining useful life of newly installed assets at year 2074; a positive delta denotes a slightly lower residual book value at the 50-year horizon.
         </div>
       </div>
 
