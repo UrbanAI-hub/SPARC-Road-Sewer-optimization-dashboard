@@ -450,16 +450,18 @@
     buttons.forEach(b => b.classList.toggle('is-active', b.getAttribute('data-tab') === target));
     panels.forEach(p => p.classList.remove('is-active'));
     targetPanel.classList.add('is-active');
-    if (window.MapsManager) MapsManager.pauseAll();
+
+    const maps = window.MapsManager || (typeof MapsManager !== 'undefined' ? MapsManager : null);
+    if (maps) maps.pauseAll();
 
     if (target === 'greedy') {
       ChartsManager.renderGreedyCharts(appData.greedyYearly, appData.params);
       ChartsManager.resizeVisibleCharts('greedy');
-      if (window.MapsManager) MapsManager.initModelMaps('greedy');
+      if (maps) maps.initModelMaps('greedy');
     } else if (target === 'milp') {
       ChartsManager.renderMilpCharts(appData.milpYearly, appData.params);
       ChartsManager.resizeVisibleCharts('milp');
-      if (window.MapsManager) MapsManager.initModelMaps('milp');
+      if (maps) maps.initModelMaps('milp');
     } else if (target === 'comparison') {
       ChartsManager.renderComparisonCharts(appData.comparison);
       ChartsManager.resizeVisibleCharts('comparison');
