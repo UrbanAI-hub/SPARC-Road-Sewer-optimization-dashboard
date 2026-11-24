@@ -295,6 +295,17 @@ def export_comparison_and_geo(ssu_raw, roads_raw, ssu, roads, params):
         json.dump(comparison_data, f)
     print(f"Exported {comp_path}")
 
+    # Also export standardized yearly data for Tab 2 and Tab 3 to ensure 100% mathematical consistency
+    greedy_yearly_path = os.path.join(DATA_OUT_DIR, "greedy_yearly.json")
+    with open(greedy_yearly_path, "w") as f:
+        json.dump(g_yearly, f)
+    print(f"Exported standardized {greedy_yearly_path}")
+
+    milp_yearly_path = os.path.join(DATA_OUT_DIR, "milp_yearly.json")
+    with open(milp_yearly_path, "w") as f:
+        json.dump(m_yearly, f)
+    print(f"Exported standardized {milp_yearly_path}")
+
     # Export simplified GeoJSONs
     print("Simplifying SSU and Road geometries for web maps...")
     ssu_geom = ssu_raw[["Ond_gebied", "len_gravity_m", "soil_code", "geometry"]].copy()

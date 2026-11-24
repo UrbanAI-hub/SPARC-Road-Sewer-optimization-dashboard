@@ -46,18 +46,20 @@ const MapsManager = (() => {
       roadByYear[y] = [];
     }
 
+    const isMilp = mapId.includes('milp');
+
     const ssuStyle = {
-      color: '#1565C0',
+      color: '#0284c7',
       weight: 1.5,
-      fillColor: '#2196F3',
-      fillOpacity: 0.42,
+      fillColor: '#38bdf8',
+      fillOpacity: 0.40,
       renderer: renderer
     };
 
     const roadStyle = {
-      color: '#d35400',
+      color: isMilp ? '#15803d' : '#b45309',
       weight: 2.2,
-      fillColor: '#e67e22',
+      fillColor: isMilp ? '#16a34a' : '#d97706',
       fillOpacity: 0.85,
       renderer: renderer
     };

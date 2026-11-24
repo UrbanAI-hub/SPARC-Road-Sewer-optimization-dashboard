@@ -1,5 +1,6 @@
 /**
  * Plotly.js interactive charts for Greedy, MILP, and Comparison tabs.
+ * Styled to harmonize with the SPARC institutional design system.
  */
 
 const ChartsManager = (() => {
@@ -9,40 +10,67 @@ const ChartsManager = (() => {
     comparison: false
   };
 
-  const baseLayout = (title, yTitle) => ({
-    title: {
-      text: title,
-      font: { color: '#ffffff', size: 14, family: 'Inter, system-ui, sans-serif' },
-      x: 0.01,
-      xanchor: 'left',
-      y: 0.97,
-      yanchor: 'top'
-    },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(255,255,255,0.025)',
-    font: { color: '#cbd5e0', size: 12 },
-    margin: { t: 74, r: 22, b: 44, l: 68 },
-    xaxis: {
-      title: 'Year',
-      gridcolor: 'rgba(255,255,255,0.07)',
-      zerolinecolor: 'rgba(255,255,255,0.15)'
-    },
-    yaxis: {
-      title: yTitle,
-      gridcolor: 'rgba(255,255,255,0.07)',
-      zerolinecolor: 'rgba(255,255,255,0.25)'
-    },
-    legend: {
-      orientation: 'h',
-      yanchor: 'bottom',
-      y: 1.01,
-      xanchor: 'left',
-      x: 0,
-      bgcolor: 'rgba(0,0,0,0)',
-      font: { size: 11 }
-    },
-    hovermode: 'x unified'
-  });
+  let cachedData = {
+    greedy: null,
+    milp: null,
+    comparison: null,
+    params: null
+  };
+
+  function isDarkTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark';
+  }
+
+  function getThemeColors() {
+    const dark = isDarkTheme();
+    return {
+      textColor: dark ? '#f8fafc' : '#1e293b',
+      textMuted: dark ? '#94a3b8' : '#64748b',
+      gridColor: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+      zeroLineColor: dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+      plotBg: dark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)'
+    };
+  }
+
+  const baseLayout = (title, yTitle) => {
+    const theme = getThemeColors();
+    return {
+      title: {
+        text: title,
+        font: { color: theme.textColor, size: 13, family: 'Inter, system-ui, sans-serif', weight: 700 },
+        x: 0.01,
+        xanchor: 'left',
+        y: 0.97,
+        yanchor: 'top'
+      },
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: theme.plotBg,
+      font: { color: theme.textMuted, size: 11, family: 'Inter, sans-serif' },
+      margin: { t: 64, r: 20, b: 44, l: 64 },
+      xaxis: {
+        title: { text: 'Planning Year', font: { size: 11, color: theme.textMuted } },
+        gridcolor: theme.gridColor,
+        zerolinecolor: theme.zeroLineColor,
+        tickfont: { size: 10, color: theme.textMuted }
+      },
+      yaxis: {
+        title: { text: yTitle, font: { size: 11, color: theme.textMuted } },
+        gridcolor: theme.gridColor,
+        zerolinecolor: theme.zeroLineColor,
+        tickfont: { size: 10, color: theme.textMuted }
+      },
+      legend: {
+        orientation: 'h',
+        yanchor: 'bottom',
+        y: 1.02,
+        xanchor: 'left',
+        x: 0,
+        bgcolor: 'rgba(0,0,0,0)',
+        font: { size: 11, color: theme.textColor }
+      },
+      hovermode: 'x unified'
+    };
+  };
 
   const plotConfig = {
     responsive: true,
@@ -51,73 +79,89 @@ const ChartsManager = (() => {
   };
 
   function renderGreedyCharts(greedyData, params) {
-    if (renderedTabs.greedy) return;
-    const years = greedyData.map(d => d.year);
-    const capKm = (params.optimization.annual_sewer_capacity_m || 40000) / 1000;
+    cachedData.greedy = greedyData;
+    cachedData.params = params;
+    renderedTabs.greedy = true;
+
+    const years = greedyData.map(d => d.year || d.Intervention_Year);
+    const capKm = ((params && params.optimization && params.optimization.annual_sewer_capacity_m) || 40000) / 1000;
 
     // 1. Capacity
+    const sewerKm = greedyData.map(d => (d.sewer_m !== undefined ? d.sewer_m : (d.sewer_m_renovated || 0)) / 1000);
     Plotly.newPlot('chart-greedy-cap', [
       {
         x: years,
-        y: greedyData.map(d => d.sewer_m_renovated / 1000),
+        y: sewerKm,
         type: 'bar',
         name: 'Renovated Sewers (km)',
-        marker: { color: '#0d7377', opacity: 0.9 },
-        hovertemplate: '%{y:.2f} km<extra></extra>'
+        marker: { color: '#00a4cc', opacity: 0.9 },
+        hovertemplate: '%{y:.2f} km<extra>Renovated</extra>'
       },
       {
         x: [years[0], years[years.length - 1]],
         y: [capKm, capKm],
         type: 'scatter',
         mode: 'lines',
-        name: `Max Capacity (${capKm} km)`,
-        line: { color: '#e74c3c', width: 2.5, dash: 'dash' },
+        name: `Statutory Contractor Ceiling (${capKm} km)`,
+        line: { color: '#dc2626', width: 2.5, dash: 'dash' },
         hoverinfo: 'skip'
       }
-    ], baseLayout('1. Greedy Baseline: Sewer Capacity Utilization', 'Renovated Sewers (km)'), plotConfig);
+    ], baseLayout('1. Heuristic Schedule: Annual Sewer Renewal vs. Capacity Limit', 'Renovated Sewers (km)'), plotConfig);
 
     // 2. Real Financial Cash Flow (NPV)
-    const layoutReal = baseLayout('2. Real Financial Cash Flow (NPV) — CapEx Outflow', 'Real CapEx (€ NPV)');
+    const layoutReal = baseLayout('2. Real Capital Cash Flow (NPV) — Excavation & Paving Outflows', 'Real CapEx (€ NPV)');
     layoutReal.barmode = 'stack';
     Plotly.newPlot('chart-greedy-real', [
       {
         x: years,
-        y: greedyData.map(d => d.npv_road_cost),
+        y: greedyData.map(d => d.road_cap !== undefined ? d.road_cap : d.npv_road_cost),
         type: 'bar',
-        name: 'Road Capital Cost',
-        marker: { color: '#bdc3c7' },
+        name: 'Road Pavement CapEx',
+        marker: { color: '#64748b' },
         hovertemplate: '€%{y:,.0f}<extra>Road CapEx</extra>'
       },
       {
         x: years,
-        y: greedyData.map(d => d.npv_sewer_cost),
+        y: greedyData.map(d => d.sewer_cap !== undefined ? d.sewer_cap : d.npv_sewer_cost),
         type: 'bar',
-        name: 'Sewer Capital Cost',
-        marker: { color: '#2196F3' },
+        name: 'Sewer Civil CapEx',
+        marker: { color: '#00a4cc' },
         hovertemplate: '€%{y:,.0f}<extra>Sewer CapEx</extra>'
       }
     ], layoutReal, plotConfig);
 
-    // 3. Virtual Costs & Risk Penalties
-    const totalRisk = greedyData.map(d => d.npv_stranded_penalty + d.npv_overdue_penalty);
-    const layoutRisk = baseLayout('3. Virtual Costs & Risk Penalties (NPV) — "The Cost of Waiting"', 'Virtual Costs (€ NPV)');
+    // 3. Risk & Capital Destruction
+    const stranded = greedyData.map(d => d.road_stranded !== undefined ? d.road_stranded : (d.npv_stranded_penalty || 0));
+    const sewerRisk = greedyData.map(d => d.sewer_overdue !== undefined ? d.sewer_overdue : (d.npv_overdue_penalty || 0));
+    const roadRisk = greedyData.map(d => d.road_overdue !== undefined ? d.road_overdue : 0);
+    const totalRisk = years.map((_, i) => stranded[i] + sewerRisk[i] + roadRisk[i]);
+
+    const layoutRisk = baseLayout('3. Societal Deterioration Liability & Avoided Capital Destruction (NPV)', 'Liability & Waste (€ NPV)');
     layoutRisk.barmode = 'stack';
     Plotly.newPlot('chart-greedy-risk', [
       {
         x: years,
-        y: greedyData.map(d => d.npv_stranded_penalty),
+        y: stranded,
         type: 'bar',
-        name: 'Stranded Asset Penalty (Roads)',
-        marker: { color: '#e67e22' },
+        name: 'Capital Destruction (Stranded Asphalt)',
+        marker: { color: '#d97706' },
         hovertemplate: '€%{y:,.0f}<extra>Stranded Waste</extra>'
       },
       {
         x: years,
-        y: greedyData.map(d => d.npv_overdue_penalty),
+        y: sewerRisk,
         type: 'bar',
-        name: 'Overdue Penalties (Risk / Collapse)',
-        marker: { color: '#c0392b' },
-        hovertemplate: '€%{y:,.0f}<extra>Overdue Risk</extra>'
+        name: 'Sewer Collapse & Delay Risk',
+        marker: { color: '#dc2626' },
+        hovertemplate: '€%{y:,.0f}<extra>Sewer Risk</extra>'
+      },
+      {
+        x: years,
+        y: roadRisk,
+        type: 'bar',
+        name: 'Road Deterioration Risk',
+        marker: { color: '#8a00cc' },
+        hovertemplate: '€%{y:,.0f}<extra>Road Risk</extra>'
       },
       {
         x: years,
@@ -125,91 +169,104 @@ const ChartsManager = (() => {
         type: 'scatter',
         mode: 'lines',
         name: 'Total Risk Trajectory',
-        line: { color: '#ff7675', width: 2.5 },
+        line: { color: '#f87171', width: 2.5 },
         hovertemplate: '€%{y:,.0f}<extra>Total Risk</extra>'
       }
     ], layoutRisk, plotConfig);
-
-    renderedTabs.greedy = true;
   }
 
   function renderMilpCharts(milpData, params) {
-    if (renderedTabs.milp) return;
-    const years = milpData.map(d => d.Intervention_Year);
-    const capKm = (params.optimization.annual_sewer_capacity_m || 40000) / 1000;
+    cachedData.milp = milpData;
+    cachedData.params = params;
+    renderedTabs.milp = true;
+
+    const years = milpData.map(d => d.year || d.Intervention_Year);
+    const capKm = ((params && params.optimization && params.optimization.annual_sewer_capacity_m) || 40000) / 1000;
 
     // 1. Capacity
+    const sewerKm = milpData.map(d => (d.sewer_m !== undefined ? d.sewer_m : (d.Total_Meters || 0)) / 1000);
     Plotly.newPlot('chart-milp-cap', [
       {
         x: years,
-        y: milpData.map(d => d.Total_Meters / 1000),
+        y: sewerKm,
         type: 'bar',
         name: 'Renovated Sewers (km)',
-        marker: { color: '#0d7377', opacity: 0.9 },
-        hovertemplate: '%{y:.2f} km<extra></extra>'
+        marker: { color: '#00a4cc', opacity: 0.9 },
+        hovertemplate: '%{y:.2f} km<extra>Renovated</extra>'
       },
       {
         x: [years[0], years[years.length - 1]],
         y: [capKm, capKm],
         type: 'scatter',
         mode: 'lines',
-        name: `Max Capacity (${capKm} km)`,
-        line: { color: '#e74c3c', width: 2.5, dash: 'dash' },
+        name: `Strict Statutory Ceiling (${capKm} km)`,
+        line: { color: '#dc2626', width: 2.5, dash: 'dash' },
         hoverinfo: 'skip'
       }
-    ], baseLayout('1. MILP Optimal Schedule: Sewer Capacity Utilization', 'Renovated Sewers (km)'), plotConfig);
+    ], baseLayout('1. MILP Optimal Schedule: Sewer Renewal Under Strict 40 km Ceiling', 'Renovated Sewers (km)'), plotConfig);
 
     // 2. Real Financial Cash Flow (NPV) + Negative Salvage Value
-    const layoutReal = baseLayout('2. Real Financial Cash Flow (NPV) & Terminal Salvage Rebate', 'Real Cash Flow (€ NPV)');
+    const layoutReal = baseLayout('2. Real Capital Outflows & Terminal Salvage Credit (NPV)', 'Real Cash Flow (€ NPV)');
     layoutReal.barmode = 'relative';
     Plotly.newPlot('chart-milp-real', [
       {
         x: years,
-        y: milpData.map(d => d.Road_Cap_NPV),
+        y: milpData.map(d => d.road_cap !== undefined ? d.road_cap : d.Road_Cap_NPV),
         type: 'bar',
-        name: 'Road Capital Cost',
-        marker: { color: '#bdc3c7' },
+        name: 'Road Pavement CapEx',
+        marker: { color: '#64748b' },
         hovertemplate: '€%{y:,.0f}<extra>Road CapEx</extra>'
       },
       {
         x: years,
-        y: milpData.map(d => d.Sewer_Cap_NPV),
+        y: milpData.map(d => d.sewer_cap !== undefined ? d.sewer_cap : d.Sewer_Cap_NPV),
         type: 'bar',
-        name: 'Sewer Capital Cost',
-        marker: { color: '#2196F3' },
+        name: 'Sewer Civil CapEx',
+        marker: { color: '#00a4cc' },
         hovertemplate: '€%{y:,.0f}<extra>Sewer CapEx</extra>'
       },
       {
         x: years,
-        y: milpData.map(d => d.Salvage_Value_NPV),
+        y: milpData.map(d => d.salvage_value !== undefined ? d.salvage_value : (d.Salvage_Value_NPV || 0)),
         type: 'bar',
-        name: 'Salvage Value Rebate (Future Life)',
-        marker: { color: '#27ae60' },
-        hovertemplate: '€%{y:,.0f}<extra>Salvage Credit</extra>'
+        name: 'Terminal Salvage Value (2074 Asset Heritage)',
+        marker: { color: '#16a34a' },
+        hovertemplate: '€%{y:,.0f}<extra>Residual Value Credit</extra>'
       }
     ], layoutReal, plotConfig);
 
-    // 3. Virtual Costs & Risk Penalties
-    const overdue = milpData.map(d => d.Sewer_Overdue_NPV + d.Road_Overdue_NPV);
-    const totalRisk = milpData.map((d, i) => d.Road_Stranded_NPV + overdue[i]);
-    const layoutRisk = baseLayout('3. Virtual Costs & Risk Penalties (NPV) — Scheduled Assets', 'Virtual Costs (€ NPV)');
+    // 3. Risk Penalties
+    const stranded = milpData.map(d => d.road_stranded !== undefined ? d.road_stranded : (d.Road_Stranded_NPV || 0));
+    const sewerRisk = milpData.map(d => d.sewer_overdue !== undefined ? d.sewer_overdue : (d.Sewer_Overdue_NPV || 0));
+    const roadRisk = milpData.map(d => d.road_overdue !== undefined ? d.road_overdue : (d.Road_Overdue_NPV || 0));
+    const totalRisk = years.map((_, i) => stranded[i] + sewerRisk[i] + roadRisk[i]);
+
+    const layoutRisk = baseLayout('3. Societal Deterioration Liability & Avoided Capital Destruction (NPV)', 'Liability & Waste (€ NPV)');
     layoutRisk.barmode = 'stack';
     Plotly.newPlot('chart-milp-risk', [
       {
         x: years,
-        y: milpData.map(d => d.Road_Stranded_NPV),
+        y: stranded,
         type: 'bar',
-        name: 'Stranded Asset Penalty (Roads)',
-        marker: { color: '#e67e22' },
+        name: 'Capital Destruction (Stranded Asphalt)',
+        marker: { color: '#d97706' },
         hovertemplate: '€%{y:,.0f}<extra>Stranded Waste</extra>'
       },
       {
         x: years,
-        y: overdue,
+        y: sewerRisk,
         type: 'bar',
-        name: 'Overdue Penalties (Sewer & Roads)',
-        marker: { color: '#c0392b' },
-        hovertemplate: '€%{y:,.0f}<extra>Overdue Risk</extra>'
+        name: 'Sewer Risk (Trade-off Managed)',
+        marker: { color: '#dc2626' },
+        hovertemplate: '€%{y:,.0f}<extra>Sewer Risk</extra>'
+      },
+      {
+        x: years,
+        y: roadRisk,
+        type: 'bar',
+        name: 'Road Deterioration Risk (Heavily Suppressed)',
+        marker: { color: '#8a00cc' },
+        hovertemplate: '€%{y:,.0f}<extra>Road Risk</extra>'
       },
       {
         x: years,
@@ -217,61 +274,61 @@ const ChartsManager = (() => {
         type: 'scatter',
         mode: 'lines',
         name: 'Total Risk Trajectory',
-        line: { color: '#ff7675', width: 2.5 },
+        line: { color: '#f87171', width: 2.5 },
         hovertemplate: '€%{y:,.0f}<extra>Total Risk</extra>'
       }
     ], layoutRisk, plotConfig);
-
-    renderedTabs.milp = true;
   }
 
   function renderComparisonCharts(compData) {
-    if (renderedTabs.comparison) return;
+    cachedData.comparison = compData;
+    renderedTabs.comparison = true;
+
     const g = compData.greedy_yearly;
     const m = compData.milp_yearly;
     const years = g.map(d => d.year);
 
-    // 1. Annual Road Surface (m2/year)
+    // 1. Annual Road Surface
     Plotly.newPlot('chart-comp-m2', [
       {
         x: years,
         y: g.map(d => d.road_m2 / 1000),
         type: 'scatter',
         mode: 'lines',
-        name: 'Greedy (Linked m²)',
-        line: { color: '#e74c3c', width: 2.5, dash: 'dash' },
-        hovertemplate: '%{y:,.0f}k m²<extra>Greedy</extra>'
+        name: 'Heuristic Baseline (Linked m²)',
+        line: { color: '#ea580c', width: 2.5, dash: 'dash' },
+        hovertemplate: '%{y:,.0f}k m²<extra>Heuristic</extra>'
       },
       {
         x: years,
         y: m.map(d => d.road_m2 / 1000),
         type: 'scatter',
         mode: 'lines',
-        name: 'MILP (Linked m²)',
-        line: { color: '#2980b9', width: 2.5 },
-        hovertemplate: '%{y:,.0f}k m²<extra>MILP</extra>'
+        name: 'MILP Optimal (Linked m²)',
+        line: { color: '#00a4cc', width: 2.5 },
+        hovertemplate: '%{y:,.0f}k m²<extra>MILP Optimal</extra>'
       }
     ], baseLayout('Annual Street Paving Surface (Thousands m²/yr)', 'Thousands m²'), plotConfig);
 
-    // 2. Stranded Asset Waste
-    const layoutStranded = baseLayout('Stranded Asset Waste (Premature Road Destruction)', 'Millions € (NPV)');
+    // 2. Stranded Asphalt Waste
+    const layoutStranded = baseLayout('Avoided Capital Destruction (Premature Pavement Excavation)', 'Millions € (NPV)');
     layoutStranded.barmode = 'group';
     Plotly.newPlot('chart-comp-stranded', [
       {
         x: years,
         y: g.map(d => d.road_stranded / 1e6),
         type: 'bar',
-        name: 'Greedy (€380.7M)',
-        marker: { color: '#e67e22', opacity: 0.85 },
-        hovertemplate: '€%{y:.2f}M<extra>Greedy</extra>'
+        name: 'Heuristic Baseline (€380.7M)',
+        marker: { color: '#d97706', opacity: 0.85 },
+        hovertemplate: '€%{y:.2f}M<extra>Heuristic</extra>'
       },
       {
         x: years,
         y: m.map(d => d.road_stranded / 1e6),
         type: 'bar',
-        name: 'MILP (€323.5M)',
-        marker: { color: '#27ae60', opacity: 0.85 },
-        hovertemplate: '€%{y:.2f}M<extra>MILP</extra>'
+        name: 'MILP Optimal (€323.5M · -€57.2M Saved)',
+        marker: { color: '#16a34a', opacity: 0.85 },
+        hovertemplate: '€%{y:.2f}M<extra>MILP Optimal</extra>'
       }
     ], layoutStranded, plotConfig);
 
@@ -282,22 +339,22 @@ const ChartsManager = (() => {
         y: g.map(d => d.road_overdue / 1e9),
         type: 'scatter',
         mode: 'lines',
-        name: 'Greedy Road Risk (€31.0B)',
-        line: { color: '#c0392b', width: 2.5, dash: 'dash' },
-        hovertemplate: '€%{y:.3f}B<extra>Greedy</extra>'
+        name: 'Heuristic Road Risk (€31.04B)',
+        line: { color: '#dc2626', width: 2.5, dash: 'dash' },
+        hovertemplate: '€%{y:.3f}B<extra>Heuristic</extra>'
       },
       {
         x: years,
         y: m.map(d => d.road_overdue / 1e9),
         type: 'scatter',
         mode: 'lines',
-        name: 'MILP Road Risk (€18.7B)',
-        line: { color: '#16a085', width: 2.5 },
-        hovertemplate: '€%{y:.3f}B<extra>MILP</extra>'
+        name: 'MILP Road Risk (€18.68B · -39.8%)',
+        line: { color: '#16a34a', width: 2.5 },
+        hovertemplate: '€%{y:.3f}B<extra>MILP Optimal</extra>'
       }
-    ], baseLayout('Road Deterioration Risk ("Decaying Streets Waiting")', 'Billions € (NPV)'), plotConfig);
+    ], baseLayout('Road Deterioration Risk ("Achterstallig Onderhoud")', 'Billions € (NPV)'), plotConfig);
 
-    // 4. Cumulative Lifecycle NPV with Net Savings Fill
+    // 4. Cumulative Lifecycle NPV
     const cumSum = (arr) => {
       let acc = 0;
       return arr.map(row => {
@@ -314,24 +371,37 @@ const ChartsManager = (() => {
         y: mCum,
         type: 'scatter',
         mode: 'lines',
-        name: 'MILP Cumulative NPV (€114.9B)',
-        line: { color: '#2980b9', width: 3 },
-        hovertemplate: '€%{y:.2f}B<extra>MILP</extra>'
+        name: 'MILP Optimal Cumulative NPV (€114.90B)',
+        line: { color: '#00a4cc', width: 3 },
+        hovertemplate: '€%{y:.2f}B<extra>MILP Optimal</extra>'
       },
       {
         x: years,
         y: gCum,
         type: 'scatter',
         mode: 'lines',
-        name: 'Greedy Cumulative NPV (€121.7B)',
-        line: { color: '#e67e22', width: 2.5, dash: 'dash' },
+        name: 'Heuristic Baseline Cumulative NPV (€121.71B)',
+        line: { color: '#d97706', width: 2.5, dash: 'dash' },
         fill: 'tonexty',
-        fillcolor: 'rgba(39, 174, 96, 0.22)',
-        hovertemplate: '€%{y:.2f}B<extra>Greedy</extra>'
+        fillcolor: 'rgba(22, 163, 74, 0.18)',
+        hovertemplate: '€%{y:.2f}B<extra>Heuristic Baseline</extra>'
       }
-    ], baseLayout('Cumulative Lifecycle NPV (Green Area = €6.81B Savings)', 'Billions € (NPV)'), plotConfig);
+    ], baseLayout('Cumulative Lifecycle NPV (Green Shading = €6.81B Net Savings)', 'Billions € (NPV)'), plotConfig);
+  }
 
-    renderedTabs.comparison = true;
+  function refreshAllCharts() {
+    if (renderedTabs.greedy && cachedData.greedy) {
+      renderedTabs.greedy = false;
+      renderGreedyCharts(cachedData.greedy, cachedData.params);
+    }
+    if (renderedTabs.milp && cachedData.milp) {
+      renderedTabs.milp = false;
+      renderMilpCharts(cachedData.milp, cachedData.params);
+    }
+    if (renderedTabs.comparison && cachedData.comparison) {
+      renderedTabs.comparison = false;
+      renderComparisonCharts(cachedData.comparison);
+    }
   }
 
   function resizeVisibleCharts(tabName) {
@@ -352,6 +422,7 @@ const ChartsManager = (() => {
     renderGreedyCharts,
     renderMilpCharts,
     renderComparisonCharts,
-    resizeVisibleCharts
+    resizeVisibleCharts,
+    refreshAllCharts
   };
 })();
